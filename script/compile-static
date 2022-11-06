@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+if [ -z "$GRAALVM_HOME" ]; then
+    echo "Please set GRAALVM_HOME"
+    exit 1
+fi
+
+"$GRAALVM_HOME/bin/gu" install native-image || true
+
+export JAVA_HOME=$GRAALVM_HOME
+export PATH=$GRAALVM_HOME/bin:$PATH
+
+CLJ_KONDO_VERSION=$(cat resources/CLJ_KONDO_VERSION)
+
+export CLJ_KONDO_NATIVE=true
+
+lein with-profiles +clojure-1.10.2 "do" clean, uberjar
+
+args=( "-jar" "target/clj-kondo-$CLJ_KONDO_VERSION-standalone.jar"
+       "-H:+ReportExceptionStackTraces"
+       "--verbose"
+       "--no-fallback"
+       "--initialize-at-build-time"
+       "--diagnostics-mode"
+       "--gc=epsilon"
+       "--static"
+       "-J-Xmx3g" "$@")
+
+"$GRAALVM_HOME/bin/native-image" "${args[@]}"
