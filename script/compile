@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 if [ -z "$GRAALVM_HOME" ]; then
-    echo "Please set GRAALVM_HOME"
-    exit 1
+  echo "Please set GRAALVM_HOME"
+  exit 1
 fi
 
 "$GRAALVM_HOME/bin/gu" install native-image || true
@@ -16,25 +16,26 @@ export CLJ_KONDO_NATIVE=true
 
 lein with-profiles +clojure-1.10.3 "do" clean, uberjar
 
-args=( "-jar" "target/clj-kondo-$CLJ_KONDO_VERSION-standalone.jar"
-       "-H:+ReportExceptionStackTraces"
-       "--verbose"
-       "--no-fallback"
-       "-march=compatibility"
-       "-O1"
-       "$@")
+args=("-jar" "target/clj-kondo-$CLJ_KONDO_VERSION-standalone.jar"
+  "-H:+ReportExceptionStackTraces"
+  "--verbose"
+  "--no-fallback"
+  "--initialize-at-build-time"
+  "--diagnostics-mode"
+  "--gc=epsilon"
+  "-J-Xmx3g" "$@")
 
 if [ "$CLJ_KONDO_STATIC" = "true" ]; then
-    if [ "$CLJ_KONDO_MUSL" = "true" ]; then
-        args+=("--static")
-        args+=("--libc=musl"
-               # see https://github.com/oracle/graal/issues/3398
-               "-H:CCompilerOption=-Wl,-z,stack-size=2097152")
-    else
-        # see https://github.com/oracle/graal/issues/3737
-        args+=("-H:+UnlockExperimentalVMOptions")
-        args+=("-H:+StaticExecutableWithDynamicLibC")
-    fi
+  if [ "$CLJ_KONDO_MUSL" = "true" ]; then
+    args+=("--static")
+    args+=("--libc=musl"
+      # see https://github.com/oracle/graal/issues/3398
+      "-H:CCompilerOption=-Wl,-z,stack-size=2097152")
+  else
+    # see https://github.com/oracle/graal/issues/3737
+    args+=("-H:+UnlockExperimentalVMOptions")
+    args+=("-H:+StaticExecutableWithDynamicLibC")
+  fi
 fi
 
 "$GRAALVM_HOME/bin/native-image" "${args[@]}"
