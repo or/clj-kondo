@@ -23,6 +23,7 @@ args=( "-jar" "target/clj-kondo-$CLJ_KONDO_VERSION-standalone.jar"
        "--initialize-at-build-time"
        "--diagnostics-mode"
        "--gc=epsilon"
+       "--pgo=default.iprof"
        "-J-Xmx3g" "$@")
 
 if [ "$CLJ_KONDO_STATIC" = "true" ]; then
